@@ -6,63 +6,52 @@ import tempfile
 from googletrans import Translator
 from pydub import AudioSegment
 import speech_recognition as sr
-import base64  # For embedding CSS
 
 # --- Custom CSS (Embedded) ---
 def inject_custom_css():
     css = """
- <style>
-    body {
-        font-family: 'Arial', sans-serif; /* Change the default font */
-        background-color: #ffe6f2; /* Light pink background */
-        color: #333;                      /* Darker text color */
-    }
+    <style>
+        body {
+            font-family: 'Arial', sans-serif; 
+            background-color: #ffe6f2; 
+            color: #333;
+        }
 
-    h1 {
-        color: #5e64ff;
-        text-align: center;
-        padding-bottom: 10px;
-    }
+        h1 {
+            color: #5e64ff;
+            text-align: center;
+            padding-bottom: 10px;
+        }
 
-    .stButton>button {
-        color: #fff;
-        background-color: #5e64ff;
-        border-radius: 5px;
-        height: 3em;
-        width: 10em;
-        border: none;
-        cursor: pointer;
-    }
+        .stButton>button {
+            color: #fff;
+            background-color: #5e64ff;
+            border-radius: 5px;
+            height: 3em;
+            width: 10em;
+            border: none;
+            cursor: pointer;
+        }
 
-    .stButton>button:hover {
-      background-color: #4247d0; /* Darker shade on hover */
-    }
+        .stButton>button:hover {
+            background-color: #4247d0;
+        }
 
+        .stTextInput > label, .stTextArea > label, .css-16ids5w > label {
+            color: #262730;
+        }
 
-    .stTextInput > label {
-        color: #262730;
-    }
+        .stSidebar {
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
 
-    .stTextArea > label {
-        color: #262730;
-    }
-
-    .css-16ids5w > label {
-        color: #262730;
-    }
-
-    .stSidebar {
-        background-color: #f9f9f9; /* Light grey sidebar background */
-        padding: 20px;
-    }
-
-    .stSidebar h1, .stSidebar h2, .stSidebar h3, .stSidebar h4 {
-        color: #262730;
-    }
+        .stSidebar h1, .stSidebar h2, .stSidebar h3, .stSidebar h4 {
+            color: #262730;
+        }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
-
 
 # --- Function Definitions (Same as before) ---
 
@@ -72,10 +61,7 @@ def offline_tts(text, accent):
     available_voices = [voice.name for voice in voices]
     print("Available voices:", available_voices)
 
-    # Initialize selected_voice as None
     selected_voice = None
-
-    # Select voice based on the chosen accent
     if accent == "English":
         selected_voice = next((voice for voice in voices if 'english' in voice.name.lower()), None)
     elif accent == "Telugu":
@@ -93,14 +79,14 @@ def offline_tts(text, accent):
     elif accent == "Portuguese":
         selected_voice = next((voice for voice in voices if 'portuguese' in voice.name.lower()), None)
 
-    # If no voice found for selected accent, set default to first available voice
+    # Default to the first voice if none found
     if selected_voice is None:
         st.warning(f"No voice available for {accent}. Defaulting to first available voice.")
         selected_voice = voices[0]  # Default to the first available voice
 
     engine.setProperty('voice', selected_voice.id)
-    engine.setProperty('rate', 150)  # Speed of speech
-    engine.setProperty('volume', 1)  # Volume (range from 0.0 to 1.0)
+    engine.setProperty('rate', 150)
+    engine.setProperty('volume', 1)
 
     # Save speech to temporary WAV file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
@@ -112,7 +98,8 @@ def offline_tts(text, accent):
     mp3_file = tmpfile.name.replace(".wav", ".mp3")
     audio = AudioSegment.from_wav(tmpfile.name)
     audio.export(mp3_file, format="mp3")
-    os.remove(tmpfile.name)
+    os.remove(tmpfile.name)  # Clean up temporary WAV file
+
     return mp3_file
 
 
@@ -135,32 +122,36 @@ def online_tts(text, accent):
         tts.write_to_fp(tmpfile)
         return tmpfile.name
 
+
 def translate_text(text, target_language):
     translator = Translator()
     translated_text = translator.translate(text, dest=target_language).text
     return translated_text
+
+
 def transcribe_audio(audio_file):
     recognizer = sr.Recognizer()
 
-    # Convert the MP3 file to WAV using pydub
+    # Convert MP3 to WAV using pydub
     wav_file = audio_file.replace(".mp3", ".wav")
     audio = AudioSegment.from_mp3(audio_file)
     audio.export(wav_file, format="wav")
 
-    # Open the WAV file for transcription
-    with sr.AudioFile(wav_file) as source:
-        audio_data = recognizer.record(source)  # Capture all the data from the WAV file
-        try:
-            # Recognize the speech in the audio file
+    try:
+        with sr.AudioFile(wav_file) as source:
+            audio_data = recognizer.record(source)  # Capture all the data from the WAV file
             text = recognizer.recognize_google(audio_data)
             return text
-        except sr.UnknownValueError:
-            return "Sorry, could not understand the audio."
-        except sr.RequestError:
-            return "Sorry, there was an error with the speech recognition service."
-        finally:
-            # Remove the temporary WAV file after transcription
-            os.remove(wav_file)
+    except sr.UnknownValueError:
+        return "Sorry, could not understand the audio."
+    except sr.RequestError:
+        return "Sorry, there was an error with the speech recognition service."
+    except Exception as e:
+        return f"Error: {str(e)}"
+    finally:
+        # Remove the temporary WAV file after transcription
+        os.remove(wav_file)
+
 
 # --- Streamlit UI with Enhanced Styling ---
 
@@ -170,16 +161,16 @@ inject_custom_css()
 # Header
 st.markdown("<h1 style='text-align: center; color: #262730;'>Speechify</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #262730;'>Text-to-Speech with Translation and Audio Transcription</p>", unsafe_allow_html=True)
+
 # Input Area
 st.markdown("<p style='color: #262730;'>Enter Text:</p>", unsafe_allow_html=True)
-text = st.text_area("", "Hello, how are you doing today?", height=150) # Remove label, improves layout
+text = st.text_area("", "Hello, how are you doing today?", height=150)
 
 # Sidebar
 with st.sidebar:
     st.header("Settings")
     tts_choice = st.selectbox("Select TTS Engine", ["gTTS (online)", "pyttsx3 (offline)"])
     accent = st.selectbox("Select Accent or Language", ["English", "Telugu", "Hindi", "Spanish", "French", "German", "Italian", "Portuguese"])
-
 
 # Translation
 if accent not in ["English"]:
@@ -188,10 +179,9 @@ else:
     translated_text = text
 
 # Button and Processing
-
 button_container = st.container()
 with button_container:
-     generate_button = st.button("Generate")
+    generate_button = st.button("Generate")
 
 if generate_button:
     if translated_text:

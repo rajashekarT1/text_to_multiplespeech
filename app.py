@@ -89,10 +89,12 @@ def offline_tts(text, accent):
     engine.setProperty('volume', 1)
 
     # Save speech to temporary WAV file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
-        tmpfile.close()
-        engine.save_to_file(text, tmpfile.name)
-        engine.runAndWait()
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as tmpfile:
+    tts.write_to_fp(tmpfile)
+    tmpfile.flush()  # Ensure content is written
+    tmpfile.seek(0)
+    # Continue using tmpfile as needed
+
 
     # Convert WAV to MP3 using pydub
     mp3_file = tmpfile.name.replace(".wav", ".mp3")

@@ -128,29 +128,27 @@ def translate_text(text, target_language):
     translated_text = translator.translate(text, dest=target_language).text
     return translated_text
 
-
 def transcribe_audio(audio_file):
     recognizer = sr.Recognizer()
 
-    # Convert MP3 to WAV using pydub
-    wav_file = audio_file.replace(".mp3", ".wav")
-    audio = AudioSegment.from_mp3(audio_file)
-    audio.export(wav_file, format="wav")
-
     try:
+        # Convert MP3 to WAV using pydub
+        wav_file = audio_file.replace(".mp3", ".wav")
+        audio = AudioSegment.from_mp3(audio_file)
+        audio.export(wav_file, format="wav")
+
         with sr.AudioFile(wav_file) as source:
-            audio_data = recognizer.record(source)  # Capture all the data from the WAV file
+            audio_data = recognizer.record(source)
             text = recognizer.recognize_google(audio_data)
             return text
-    except sr.UnknownValueError:
-        return "Sorry, could not understand the audio."
-    except sr.RequestError:
-        return "Sorry, there was an error with the speech recognition service."
+    except FileNotFoundError:
+        return "Audio file not found."
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error during transcription: {str(e)}"
     finally:
-        # Remove the temporary WAV file after transcription
-        os.remove(wav_file)
+        if os.path.exists(wav_file):
+            os.remove(wav_file)
+
 
 
 # --- Streamlit UI with Enhanced Styling ---
